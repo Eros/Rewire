@@ -1,0 +1,22 @@
+{
+  "name": "Windows editing",
+  "platform": "windows",
+  "shortcuts": [
+    { "action": "Copy", "keys": "ctrl+c" },
+    { "action": "Paste", "keys": "ctrl+v" },
+    { "action": "Cut", "keys": "ctrl+x" },
+    { "action": "Undo", "keys": "ctrl+z" },
+    { "action": "Redo", "keys": "ctrl+y" },
+    { "action": "Select all", "keys": "ctrl+a" },
+    { "action": "Save", "keys": "ctrl+s" },
+    { "action": "Find", "keys": "ctrl+f" },
+    { "action": "New tab", "keys": "ctrl+t" },
+    { "action": "Start of line", "keys": "home" },
+    { "action": "End of line", "keys": "end" },
+    { "action": "Previous word", "keys": "ctrl+left" },
+    { "action": "Next word", "keys": "ctrl+right" },
+    { "action": "Top of document", "keys": "ctrl+home" },
+    { "action": "Bottom of document", "keys": "ctrl+end" },
+    { "action": "Delete previous word", "keys": "ctrl+bspace" }
+  ]
+}

@@ -1,0 +1,48 @@
+{
+  "stages": [
+    {
+      "id": "baseline",
+      "title": "Baseline",
+      "description": "Two minutes of ordinary words on your old keyboard, so every later stage is measured against your usual speed.",
+      "drill": "baseline",
+      "seconds": 120
+    },
+    {
+      "id": "home",
+      "title": "Home row",
+      "description": "The home row sits in straight columns rather than staggered rows. Keep your fingers resting here.",
+      "drill": "words",
+      "speedShare": 0.4,
+      "keys": ["a", "s", "d", "f", "g", "h", "j", "k", "l", ";"]
+    },
+    {
+      "id": "columns",
+      "title": "One column per finger",
+      "description": "Each finger moves straight up and down its own column, from the number row to the bottom row.",
+      "drill": "columns",
+      "speedShare": 0.45,
+      "keys": [
+        "1", "2", "3", "4", "5", "6", "7", "8", "9", "0",
+        "q", "w", "e", "r", "t", "y", "u", "i", "o", "p",
+        "a", "s", "d", "f", "g", "h", "j", "k", "l", ";",
+        "z", "x", "c", "v", "b", "n", "m", ",", ".", "/"
+      ]
+    },
+    {
+      "id": "thumbs",
+      "title": "Thumb clusters",
+      "description": "Backspace, Delete, Enter, Space and the modifiers move under your thumbs.",
+      "drill": "commands",
+      "speedShare": 0.5,
+      "keys": ["bspace", "delete", "enter", "space", "home", "end", "pup", "pdown", "lctrl", "lalt", "rwin", "rctrl"]
+    },
+    {
+      "id": "awkward",
+      "title": "The awkward keys",
+      "description": "Split arrows, brackets on the bottom row, = on the far left, and the ` and \\ keys.",
+      "drill": "commands",
+      "speedShare": 0.5,
+      "keys": ["left", "right", "up", "down", "obrack", "cbrack", "=", "`", "\\", "intl-\\", "hyphen", "'"]
+    }
+  ]
+}

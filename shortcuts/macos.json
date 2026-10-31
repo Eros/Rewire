@@ -1,0 +1,22 @@
+{
+  "name": "macOS editing",
+  "platform": "macos",
+  "shortcuts": [
+    { "action": "Copy", "keys": "cmd+c" },
+    { "action": "Paste", "keys": "cmd+v" },
+    { "action": "Cut", "keys": "cmd+x" },
+    { "action": "Undo", "keys": "cmd+z" },
+    { "action": "Redo", "keys": "cmd+shift+z" },
+    { "action": "Select all", "keys": "cmd+a" },
+    { "action": "Save", "keys": "cmd+s" },
+    { "action": "Find", "keys": "cmd+f" },
+    { "action": "New tab", "keys": "cmd+t" },
+    { "action": "Start of line", "keys": "cmd+left" },
+    { "action": "End of line", "keys": "cmd+right" },
+    { "action": "Previous word", "keys": "alt+left" },
+    { "action": "Next word", "keys": "alt+right" },
+    { "action": "Top of document", "keys": "cmd+up" },
+    { "action": "Bottom of document", "keys": "cmd+down" },
+    { "action": "Delete previous word", "keys": "alt+bspace" }
+  ]
+}

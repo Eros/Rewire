@@ -1,0 +1,355 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Rewire.ViewModels"
+             xmlns:controls="using:Rewire.Controls"
+             xmlns:keyboards="using:Rewire.Core.Keyboards"
+             xmlns:layouts="using:Rewire.Core.Layouts"
+             x:Class="Rewire.Views.ConfiguratorView"
+             x:DataType="vm:ConfiguratorViewModel">
+    <Panel>
+        <Grid ColumnDefinitions="280,*">
+
+            <!-- Profiles and history -->
+            <Border Grid.Column="0" Padding="16" BorderThickness="0,0,1,0"
+                    BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}">
+                <Grid RowDefinitions="Auto,*,Auto,Auto,Auto,*">
+                    <DockPanel Grid.Row="0" Margin="0,0,0,8">
+                        <Button DockPanel.Dock="Right" Content="Import" Command="{Binding ImportCommand}"
+                                ToolTip.Tip="Read the layout files from the keyboard's v-drive" />
+                        <TextBlock Classes="heading" Text="Layouts" VerticalAlignment="Center" Margin="0" />
+                    </DockPanel>
+
+                    <ListBox Grid.Row="1" ItemsSource="{Binding Profiles}" SelectedItem="{Binding SelectedProfile}"
+                             Background="Transparent">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate x:DataType="vm:ProfileItem">
+                                <StackPanel Spacing="2">
+                                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
+                                    <TextBlock Text="{Binding Summary}" Classes="muted" FontSize="12" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+
+                    <TextBlock Grid.Row="2" Classes="heading" Text="Presets" Margin="0,16,0,6" />
+                    <ItemsControl Grid.Row="3" ItemsSource="{Binding Presets}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:PresetItem">
+                                <DockPanel Margin="0,0,0,10">
+                                    <StackPanel DockPanel.Dock="Right" Spacing="4" VerticalAlignment="Top" Margin="8,0,0,0">
+                                        <Button Content="Apply" Padding="8,2" FontSize="12" IsVisible="{Binding CanApply}"
+                                                Command="{Binding $parent[UserControl].((vm:ConfiguratorViewModel)DataContext).ApplyPresetCommand}"
+                                                CommandParameter="{Binding}" />
+                                        <Button Content="Remove" Padding="8,2" FontSize="12" IsVisible="{Binding CanRemove}"
+                                                Command="{Binding $parent[UserControl].((vm:ConfiguratorViewModel)DataContext).RemovePresetCommand}"
+                                                CommandParameter="{Binding}" />
+                                    </StackPanel>
+                                    <StackPanel Spacing="2">
+                                        <TextBlock Text="{Binding Preset.Name}" FontWeight="SemiBold" FontSize="13" />
+                                        <TextBlock Text="{Binding Status}" Classes="muted" FontSize="11" TextWrapping="Wrap" MaxHeight="44"
+                                                   TextTrimming="CharacterEllipsis" />
+                                        <TextBlock Text="{Binding Warning}" FontSize="11" TextWrapping="Wrap" Foreground="#D9822B"
+                                                   IsVisible="{Binding Warning, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                                    </StackPanel>
+                                </DockPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <TextBlock Grid.Row="4" Classes="heading" Text="History" Margin="0,16,0,6" />
+                    <TextBlock Grid.Row="5" IsVisible="{Binding !HasHistory}" Classes="muted" FontSize="12" TextWrapping="Wrap"
+                               Text="Every apply saves a snapshot of the keyboard first, so you can put any earlier version back." />
+                    <ListBox Grid.Row="5" ItemsSource="{Binding History}" Background="Transparent" IsVisible="{Binding HasHistory}">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate x:DataType="vm:SnapshotItem">
+                                <DockPanel>
+                                    <Button DockPanel.Dock="Right" Content="Restore" FontSize="12" Padding="8,2"
+                                            VerticalAlignment="Center"
+                                            Command="{Binding $parent[UserControl].((vm:ConfiguratorViewModel)DataContext).RestoreCommand}"
+                                            CommandParameter="{Binding}" />
+                                    <StackPanel Spacing="2" Margin="0,0,8,0">
+                                        <TextBlock Text="{Binding When}" FontWeight="SemiBold" FontSize="12" />
+                                        <TextBlock Text="{Binding Note}" Classes="muted" FontSize="12"
+                                                   TextTrimming="CharacterEllipsis" />
+                                    </StackPanel>
+                                </DockPanel>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </Grid>
+            </Border>
+
+            <!-- Getting started -->
+            <StackPanel Grid.Column="1" IsVisible="{Binding !HasProfiles}" MaxWidth="460"
+                        VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="12">
+                <TextBlock Text="Import your layouts to get started" FontSize="20" FontWeight="SemiBold" />
+                <TextBlock TextWrapping="Wrap" Classes="muted"
+                           Text="Rewire edits a copy of your keyboard's layout files and only writes to the keyboard when you apply. Open the v-drive, then import." />
+                <Button Content="Import from keyboard" Command="{Binding ImportCommand}" Classes="accent" />
+            </StackPanel>
+
+            <!-- Configurator -->
+            <Grid Grid.Column="1" Margin="24,20" RowDefinitions="Auto,*,Auto,Auto" IsVisible="{Binding HasProfiles}">
+                <DockPanel Grid.Row="0" Margin="0,0,0,12">
+                    <ListBox DockPanel.Dock="Right" ItemsSource="{Binding Layers}" SelectedItem="{Binding SelectedLayer}"
+                             VerticalAlignment="Center">
+                        <ListBox.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel Orientation="Horizontal" />
+                            </ItemsPanelTemplate>
+                        </ListBox.ItemsPanel>
+                        <ListBox.ItemTemplate>
+                            <DataTemplate x:DataType="keyboards:KeyboardLayer">
+                                <TextBlock Text="{Binding Name}" />
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                    <StackPanel Spacing="2" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding SelectedProfile.Name}" FontSize="20" FontWeight="SemiBold" />
+                        <TextBlock Text="{Binding Pack.Name}" Classes="muted" />
+                    </StackPanel>
+                </DockPanel>
+
+                <controls:KeyWellMap Grid.Row="1"
+                                     Layout="{Binding Layout}"
+                                     LayerId="{Binding SelectedLayer.Id}"
+                                     SelectedKeyId="{Binding SelectedKeyId}" />
+
+                <!-- Selected key -->
+                <Grid Grid.Row="2" Margin="0,16,0,0" ColumnDefinitions="*,24,1.4*" Height="290">
+                    <StackPanel Grid.Column="0" Spacing="6">
+                        <TextBlock Text="{Binding SelectedKeyTitle}" FontWeight="SemiBold" FontSize="15" />
+                        <TextBlock Text="{Binding SelectedKeyDetail}" TextWrapping="Wrap" Classes="muted" />
+                        <WrapPanel IsVisible="{Binding HasSelectedKey}" Margin="0,6,0,0">
+                            <Button Content="Press a key" Command="{Binding BeginCaptureCommand}" Margin="0,0,8,8" />
+                            <Button Content="Swap with…" Command="{Binding BeginSwapCommand}" Margin="0,0,8,8" />
+                            <Button Content="Reset to default" Command="{Binding ResetKeyCommand}" Margin="0,0,8,8" />
+                        </WrapPanel>
+                        <Border IsVisible="{Binding Prompt, Converter={x:Static ObjectConverters.IsNotNull}}"
+                                Padding="10,8" CornerRadius="6"
+                                Background="{DynamicResource SystemControlHighlightListAccentLowBrush}">
+                            <DockPanel>
+                                <Button DockPanel.Dock="Right" Content="Cancel" Command="{Binding CancelPromptCommand}"
+                                        Padding="8,2" FontSize="12" />
+                                <TextBlock Text="{Binding Prompt}" TextWrapping="Wrap" VerticalAlignment="Center" />
+                            </DockPanel>
+                        </Border>
+                    </StackPanel>
+
+                    <TabControl Grid.Column="2" IsVisible="{Binding HasSelectedKey}" Padding="0,6,0,0" SelectedIndex="{Binding KeyPanelTab}">
+                        <TabItem Header="Action" FontSize="14">
+                            <DockPanel>
+                                <TextBox DockPanel.Dock="Top" Text="{Binding ActionFilter}" PlaceholderText="Filter actions, such as esc or vol"
+                                         Margin="0,0,0,8" />
+                                <ScrollViewer>
+                                    <ItemsControl ItemsSource="{Binding FilteredActions}">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <WrapPanel />
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate x:DataType="vm:ActionOption">
+                                                <Button Classes="chip" Content="{Binding Display}"
+                                                        Command="{Binding $parent[UserControl].((vm:ConfiguratorViewModel)DataContext).ChooseActionCommand}"
+                                                        CommandParameter="{Binding}" />
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </ScrollViewer>
+                            </DockPanel>
+                        </TabItem>
+                        <TabItem Header="Macros" FontSize="14">
+                            <Panel>
+                                <DockPanel IsVisible="{Binding !IsEditingMacro}">
+                                    <Button DockPanel.Dock="Bottom" Content="New macro on this key" Command="{Binding NewMacroCommand}"
+                                            HorizontalAlignment="Left" Margin="0,8,0,0" />
+                                    <TextBlock DockPanel.Dock="Top" IsVisible="{Binding !HasKeyMacros}" Classes="muted" TextWrapping="Wrap"
+                                               Text="No macros on this key yet. A macro plays a sequence of keys when the key is pressed, alone or with modifiers." />
+                                    <ScrollViewer>
+                                        <ItemsControl ItemsSource="{Binding KeyMacros}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate x:DataType="vm:MacroItem">
+                                                    <DockPanel Margin="0,0,0,8">
+                                                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                                            <Button Content="Edit" Padding="8,2" FontSize="12"
+                                                                    Command="{Binding $parent[UserControl].((vm:ConfiguratorViewModel)DataContext).EditMacroCommand}"
+                                                                    CommandParameter="{Binding}" />
+                                                            <Button Content="Delete" Padding="8,2" FontSize="12"
+                                                                    Command="{Binding $parent[UserControl].((vm:ConfiguratorViewModel)DataContext).DeleteMacroCommand}"
+                                                                    CommandParameter="{Binding}" />
+                                                        </StackPanel>
+                                                        <StackPanel Spacing="2" Margin="0,0,8,0">
+                                                            <TextBlock Text="{Binding Trigger}" FontWeight="SemiBold" />
+                                                            <TextBlock Text="{Binding Steps}" Classes="muted" FontFamily="Menlo, Consolas, monospace"
+                                                                       FontSize="12" TextTrimming="CharacterEllipsis" />
+                                                        </StackPanel>
+                                                    </DockPanel>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </ScrollViewer>
+                                </DockPanel>
+
+                                <DockPanel IsVisible="{Binding IsEditingMacro}">
+                                    <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Spacing="8" Margin="0,8,0,0">
+                                        <Button Content="Save macro" Classes="accent" Command="{Binding SaveMacroCommand}"
+                                                IsEnabled="{Binding MacroEditor.CanSave, FallbackValue=False}" />
+                                        <Button Content="Cancel" Command="{Binding CancelMacroCommand}" />
+                                    </StackPanel>
+                                    <ScrollViewer>
+                                        <StackPanel Spacing="8" DataContext="{Binding MacroEditor}" x:DataType="vm:MacroEditorViewModel">
+                                            <WrapPanel>
+                                                <TextBlock Text="Hold" VerticalAlignment="Center" Margin="0,0,6,6" />
+                                                <ItemsControl ItemsSource="{Binding Modifiers}">
+                                                    <ItemsControl.ItemsPanel>
+                                                        <ItemsPanelTemplate>
+                                                            <WrapPanel />
+                                                        </ItemsPanelTemplate>
+                                                    </ItemsControl.ItemsPanel>
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate x:DataType="vm:TriggerModifier">
+                                                            <ToggleButton Content="{Binding Label}" IsChecked="{Binding IsOn}" Classes="chip"
+                                                                          Padding="6,2" Margin="0,0,4,6" FontSize="12" />
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+                                                <TextBlock Text="{Binding KeyLegend, StringFormat='then press {0}'}" VerticalAlignment="Center" Margin="4,0,0,6" />
+                                            </WrapPanel>
+
+                                            <DockPanel>
+                                                <Button DockPanel.Dock="Right" Content="Add text" Command="{Binding AddTextCommand}" Margin="8,0,0,0" />
+                                                <TextBox Text="{Binding Text}" PlaceholderText="Type text for the macro to play" />
+                                            </DockPanel>
+
+                                            <WrapPanel>
+                                                <Button Content="Record keys" Command="{Binding ToggleRecordingCommand}" IsVisible="{Binding !IsRecording}" Margin="0,0,8,8" />
+                                                <Button Content="Stop recording" Command="{Binding ToggleRecordingCommand}" IsVisible="{Binding IsRecording}"
+                                                        Classes="accent" Margin="0,0,8,8" />
+                                                <Button Content="Pause 125 ms" Command="{Binding AddDelayCommand}" CommandParameter="125" Margin="0,0,8,8" />
+                                                <Button Content="Pause 500 ms" Command="{Binding AddDelayCommand}" CommandParameter="500" Margin="0,0,8,8" />
+                                                <Button Content="Clear" Command="{Binding ClearStepsCommand}" Margin="0,0,8,8" />
+                                                <ComboBox ItemsSource="{Binding SpeedOptions}" SelectedItem="{Binding Speed}" Margin="0,0,8,8">
+                                                    <ComboBox.ItemTemplate>
+                                                        <DataTemplate x:DataType="vm:SpeedOption">
+                                                            <TextBlock Text="{Binding Label}" />
+                                                        </DataTemplate>
+                                                    </ComboBox.ItemTemplate>
+                                                </ComboBox>
+                                            </WrapPanel>
+
+                                            <ItemsControl ItemsSource="{Binding Problems}">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate x:DataType="layouts:MacroProblem">
+                                                        <TextBlock Text="{Binding Message}" TextWrapping="Wrap" FontSize="12"
+                                                                   Foreground="{Binding Severity, Converter={x:Static vm:MacroEditorViewModel.SeverityBrush}}" />
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                            <ItemsControl ItemsSource="{Binding Steps}">
+                                                <ItemsControl.ItemsPanel>
+                                                    <ItemsPanelTemplate>
+                                                        <WrapPanel />
+                                                    </ItemsPanelTemplate>
+                                                </ItemsControl.ItemsPanel>
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate x:DataType="vm:MacroChip">
+                                                        <Button Classes="chip" Content="{Binding Label, StringFormat='{}{0}  ×'}"
+                                                                ToolTip.Tip="Remove this step"
+                                                                Command="{Binding $parent[StackPanel].((vm:MacroEditorViewModel)DataContext).RemoveStepCommand}"
+                                                                CommandParameter="{Binding}" />
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+
+                                        </StackPanel>
+                                    </ScrollViewer>
+                                </DockPanel>
+                            </Panel>
+                        </TabItem>
+                    </TabControl>
+                </Grid>
+
+                <!-- Pending changes -->
+                <DockPanel Grid.Row="3" Margin="0,12,0,0">
+                    <Button DockPanel.Dock="Right" Content="Review and apply" Classes="accent"
+                            Command="{Binding BeginReviewCommand}" IsEnabled="{Binding HasPendingChanges}" />
+                    <Button DockPanel.Dock="Right" Content="Discard changes to this layout" Margin="0,0,8,0"
+                            Command="{Binding DiscardChangesCommand}" IsEnabled="{Binding SelectedProfile.HasChanges, FallbackValue=False}" />
+                    <TextBlock Text="{Binding PendingSummary}" VerticalAlignment="Center" Classes="muted" />
+                </DockPanel>
+            </Grid>
+        </Grid>
+
+        <!-- Keyboard status, shown while importing outside the review panel -->
+        <Border IsVisible="{Binding Flow.IsRunning}" HorizontalAlignment="Center" VerticalAlignment="Bottom"
+                Margin="0,0,0,24" Padding="16,12" CornerRadius="8" MaxWidth="640"
+                Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
+            <DockPanel>
+                <Button DockPanel.Dock="Right" Content="Cancel" Command="{Binding Flow.CancelCommand}" Margin="12,0,0,0" />
+                <TextBlock Text="{Binding Flow.Status}" TextWrapping="Wrap" VerticalAlignment="Center" />
+            </DockPanel>
+        </Border>
+
+        <!-- Review and apply -->
+        <Border IsVisible="{Binding IsReviewing}" Background="#80000000">
+            <Border MaxWidth="760" MaxHeight="680" Margin="32" Padding="24" CornerRadius="10"
+                    Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}"
+                    BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}" BorderThickness="1"
+                    BoxShadow="0 12 40 0 #60000000">
+                <DockPanel>
+                    <TextBlock DockPanel.Dock="Top" Text="Review changes" FontSize="20" FontWeight="SemiBold" Margin="0,0,0,12" />
+
+                    <StackPanel DockPanel.Dock="Bottom" Spacing="10" Margin="0,16,0,0">
+                        <TextBlock Text="Note for the history" Classes="heading" />
+                        <TextBox Text="{Binding ApplyNote}" />
+
+                        <Border Padding="12,10" CornerRadius="6" IsVisible="{Binding Flow.Status, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                                Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="{Binding Flow.Status}" TextWrapping="Wrap" />
+                                <ItemsControl ItemsSource="{Binding Flow.Problems}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="x:String">
+                                            <TextBlock Text="{Binding}" TextWrapping="Wrap" Classes="muted" />
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </Border>
+
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+                            <Button Content="Cancel" Command="{Binding Flow.CancelCommand}" IsVisible="{Binding Flow.IsRunning}" />
+                            <Button Content="Close" Command="{Binding EndReviewCommand}" IsVisible="{Binding !Flow.IsRunning}" />
+                            <Button Content="Apply to keyboard" Classes="accent" Command="{Binding ApplyCommand}"
+                                    IsVisible="{Binding HasPendingChanges}" />
+                        </StackPanel>
+                    </StackPanel>
+
+                    <ScrollViewer>
+                        <ItemsControl ItemsSource="{Binding Review}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:ChangeGroup">
+                                    <StackPanel Margin="0,0,0,14" Spacing="6">
+                                        <TextBlock Text="{Binding ProfileName}" FontWeight="SemiBold" />
+                                        <ItemsControl ItemsSource="{Binding Changes}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate x:DataType="vm:ChangeRow">
+                                                    <Grid ColumnDefinitions="*,*" Margin="0,2">
+                                                        <TextBlock Grid.Column="0" Text="{Binding Description}" TextWrapping="Wrap" Margin="0,0,12,0" />
+                                                        <TextBlock Grid.Column="1" Text="{Binding Raw}" FontFamily="Menlo, Consolas, monospace"
+                                                                   FontSize="12" Classes="muted" TextWrapping="Wrap" />
+                                                    </Grid>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </DockPanel>
+            </Border>
+        </Border>
+    </Panel>
+</UserControl>

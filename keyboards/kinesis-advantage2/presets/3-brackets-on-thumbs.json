@@ -1,0 +1,8 @@
+{
+  "name": "Brackets on the thumbs",
+  "description": "[ and ] move from the bottom row to Home and Page Up, where the thumbs reach them without leaving the home row.",
+  "remaps": [
+    { "location": "home", "action": "obrack" },
+    { "location": "pup", "action": "cbrack" }
+  ]
+}

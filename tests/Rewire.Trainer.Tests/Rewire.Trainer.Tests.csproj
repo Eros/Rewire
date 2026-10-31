@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <IsPackable>false</IsPackable>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1"/>
+        <PackageReference Include="xunit" Version="2.9.3"/>
+        <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <Using Include="Xunit"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\..\src\Rewire.Trainer\Rewire.Trainer.csproj"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <None Include="..\..\keyboards\**" LinkBase="keyboards" CopyToOutputDirectory="PreserveNewest"/>
+        <None Include="..\..\templates\**" LinkBase="templates" CopyToOutputDirectory="PreserveNewest"/>
+        <None Include="..\..\shortcuts\**" LinkBase="shortcuts" CopyToOutputDirectory="PreserveNewest"/>
+        <None Include="..\Rewire.Core.Tests\Golden\advantage2-george_qwerty.txt" Link="advantage2-george_qwerty.txt" CopyToOutputDirectory="PreserveNewest"/>
+    </ItemGroup>
+</Project>

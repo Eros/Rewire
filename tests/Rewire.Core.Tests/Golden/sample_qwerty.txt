@@ -1,0 +1,8 @@
+[caps]>[escape]
+[escape]>[caps]
+
+[lctrl]>[lwin]
+{lctrl}{f1}>{h}{e}{l}{l}{o}
+this line is not understood
+[obrack]>
+[intl-\]>[bslash]

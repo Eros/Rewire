@@ -1,0 +1,7 @@
+{
+  "name": "Esc on Caps Lock",
+  "description": "Caps Lock becomes Escape, a home-row reach instead of a stretch to the corner.",
+  "remaps": [
+    { "location": "caps", "action": "escape" }
+  ]
+}

@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleName</key>
+    <string>Rewire</string>
+    <key>CFBundleDisplayName</key>
+    <string>Rewire</string>
+    <key>CFBundleIdentifier</key>
+    <string>$(BUNDLE_ID)</string>
+    <key>CFBundleExecutable</key>
+    <string>Rewire</string>
+    <key>CFBundleIconFile</key>
+    <string>Rewire</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleShortVersionString</key>
+    <string>$(VERSION)</string>
+    <key>CFBundleVersion</key>
+    <string>$(VERSION)</string>
+    <key>LSMinimumSystemVersion</key>
+    <string>12.0</string>
+    <key>LSApplicationCategoryType</key>
+    <string>public.app-category.productivity</string>
+    <key>NSHighResolutionCapable</key>
+    <true/>
+    <key>NSRemovableVolumesUsageDescription</key>
+    <string>Rewire reads and writes your keyboard's layout files on its v-drive, which appears as a removable drive.</string>
+    <key>NSHumanReadableCopyright</key>
+    <string>Rewire contributors</string>
+</dict>
+</plist>

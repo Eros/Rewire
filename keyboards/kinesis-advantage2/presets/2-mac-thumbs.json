@@ -1,0 +1,13 @@
+{
+  "name": "Mac thumb modifiers",
+  "description": "Command on the inner thumb keys and Control on the right, as the keyboard's own Mac mode writes them, with Scroll Lock as the power key.",
+  "remaps": [
+    { "location": "lctrl", "action": "lwin" },
+    { "location": "rwin", "action": "rctrl" },
+    { "location": "rctrl", "action": "lwin" },
+    { "location": "scroll", "action": "shutdn" },
+    { "location": "kp-lctrl", "action": "lwin" },
+    { "location": "kp-rwin", "action": "rctrl" },
+    { "location": "kp-rctrl", "action": "rwin" }
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "name": "Colemak",
+  "description": "The Colemak letter layout, which keeps most shortcuts in place and moves the commonest letters to the home row.",
+  "remaps": [
+    { "location": "e", "action": "f" },
+    { "location": "r", "action": "p" },
+    { "location": "t", "action": "g" },
+    { "location": "y", "action": "j" },
+    { "location": "u", "action": "l" },
+    { "location": "i", "action": "u" },
+    { "location": "o", "action": "y" },
+    { "location": "p", "action": ";" },
+    { "location": "s", "action": "r" },
+    { "location": "d", "action": "s" },
+    { "location": "f", "action": "t" },
+    { "location": "g", "action": "d" },
+    { "location": "j", "action": "n" },
+    { "location": "k", "action": "e" },
+    { "location": "l", "action": "i" },
+    { "location": ";", "action": "o" },
+    { "location": "n", "action": "k" }
+  ]
+}

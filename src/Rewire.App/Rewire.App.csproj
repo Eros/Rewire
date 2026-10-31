@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <OutputType>WinExe</OutputType>
+        <AssemblyName>Rewire</AssemblyName>
+        <RootNamespace>Rewire</RootNamespace>
+        <ApplicationManifest>app.manifest</ApplicationManifest>
+        <ApplicationIcon>Assets\rewire.ico</ApplicationIcon>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <AvaloniaResource Include="Assets\**"/>
+        <None Include="..\..\keyboards\**" LinkBase="keyboards" CopyToOutputDirectory="PreserveNewest"/>
+        <None Include="..\..\templates\**" LinkBase="templates" CopyToOutputDirectory="PreserveNewest"/>
+        <None Include="..\..\shortcuts\**" LinkBase="shortcuts" CopyToOutputDirectory="PreserveNewest"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Avalonia" Version="12.1.4"/>
+        <PackageReference Include="Avalonia.Desktop" Version="12.1.4"/>
+        <PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.4"/>
+        <PackageReference Include="Avalonia.Fonts.Inter" Version="12.1.4"/>
+        <PackageReference Include="AvaloniaUI.DiagnosticsSupport" Version="2.2.3">
+            <IncludeAssets Condition="'$(Configuration)' != 'Debug'">None</IncludeAssets>
+            <PrivateAssets Condition="'$(Configuration)' != 'Debug'">All</PrivateAssets>
+        </PackageReference>
+        <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2"/>
+        <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.14"/>
+        <PackageReference Include="TextMateSharp" Version="2.0.4"/>
+        <PackageReference Include="Velopack" Version="1.2.161"/>
+        <PackageReference Include="TextMateSharp.Grammars" Version="2.0.4"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\Rewire.Core\Rewire.Core.csproj"/>
+        <ProjectReference Include="..\Rewire.Device\Rewire.Device.csproj"/>
+        <ProjectReference Include="..\Rewire.Trainer\Rewire.Trainer.csproj"/>
+    </ItemGroup>
+</Project>

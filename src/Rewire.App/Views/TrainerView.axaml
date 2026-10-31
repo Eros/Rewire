@@ -1,0 +1,330 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Rewire.ViewModels"
+             xmlns:controls="using:Rewire.Controls"
+             xmlns:keyboards="using:Rewire.Core.Keyboards"
+             xmlns:trainer="using:Rewire.Trainer"
+             x:Class="Rewire.Views.TrainerView"
+             x:DataType="vm:TrainerViewModel">
+
+    <UserControl.Styles>
+        <Style Selector="StackPanel.locked">
+            <Setter Property="Opacity" Value="0.45" />
+        </Style>
+        <Style Selector="Border.cell">
+            <Setter Property="Padding" Value="1,2" />
+            <Setter Property="MinWidth" Value="10" />
+            <Setter Property="CornerRadius" Value="3" />
+        </Style>
+        <Style Selector="Border.cell TextBlock">
+            <Setter Property="FontFamily" Value="Menlo, Consolas, monospace" />
+            <Setter Property="FontSize" Value="22" />
+            <Setter Property="Opacity" Value="0.45" />
+        </Style>
+        <Style Selector="Border.cell.done TextBlock">
+            <Setter Property="Opacity" Value="1" />
+        </Style>
+        <Style Selector="Border.cell.missed TextBlock">
+            <Setter Property="Foreground" Value="#E5484D" />
+            <Setter Property="Opacity" Value="1" />
+        </Style>
+        <Style Selector="Border.cell.current">
+            <Setter Property="Background" Value="{DynamicResource SystemAccentColor}" />
+        </Style>
+        <Style Selector="Border.cell.current TextBlock">
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="Opacity" Value="1" />
+        </Style>
+        <Style Selector="Border.cell.command">
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="BorderBrush" Value="{DynamicResource SystemControlForegroundBaseMediumLowBrush}" />
+            <Setter Property="Padding" Value="5,2" />
+            <Setter Property="Margin" Value="2,0" />
+        </Style>
+        <Style Selector="Border.cell.command TextBlock">
+            <Setter Property="FontFamily" Value="{x:Static FontFamily.Default}" />
+            <Setter Property="FontSize" Value="15" />
+        </Style>
+
+        <Style Selector="TextBlock.code">
+            <Setter Property="FontFamily" Value="Menlo, Consolas, monospace" />
+            <Setter Property="FontSize" Value="17" />
+        </Style>
+        <Style Selector="Border.codecell">
+            <Setter Property="CornerRadius" Value="2" />
+        </Style>
+        <Style Selector="Border.codecell.current">
+            <Setter Property="Background" Value="{DynamicResource SystemAccentColor}" />
+        </Style>
+        <Style Selector="Border.codecell.current TextBlock">
+            <Setter Property="Foreground" Value="White" />
+        </Style>
+        <Style Selector="Border.codecell.enter TextBlock">
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="Margin" Value="4,0,0,0" />
+        </Style>
+
+        <Style Selector="ListBox.modes ListBoxItem">
+            <Setter Property="Padding" Value="4,8" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+        </Style>
+        <Style Selector="Border.panel">
+            <Setter Property="Padding" Value="16" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Background" Value="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}" />
+        </Style>
+        <Style Selector="Border.result">
+            <Setter Property="Padding" Value="12,8" />
+            <Setter Property="CornerRadius" Value="6" />
+            <Setter Property="Background" Value="{DynamicResource SystemControlHighlightListAccentLowBrush}" />
+        </Style>
+    </UserControl.Styles>
+
+    <Grid ColumnDefinitions="280,*">
+
+        <!-- Sidebar -->
+        <Border Grid.Column="0" Padding="16" BorderThickness="0,0,1,0"
+                BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}">
+            <Grid RowDefinitions="Auto,*">
+                <ListBox Grid.Row="0" ItemsSource="{Binding Modes}" SelectedIndex="{Binding Mode}" Margin="0,0,0,14" Classes="modes">
+                    <ListBox.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <UniformGrid Rows="1" />
+                        </ItemsPanelTemplate>
+                    </ListBox.ItemsPanel>
+                </ListBox>
+
+                <!-- Stages -->
+                <Grid Grid.Row="1" RowDefinitions="Auto,Auto,Auto,*" IsVisible="{Binding IsStagesMode}">
+                    <TextBlock Grid.Row="0" Classes="heading" Text="Stages" />
+                    <ListBox Grid.Row="1" ItemsSource="{Binding Stages}" SelectedItem="{Binding SelectedStage}"
+                             Background="Transparent">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate x:DataType="vm:StageItem">
+                                <StackPanel Spacing="2" Classes.locked="{Binding IsLocked}">
+                                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold" />
+                                    <TextBlock Text="{Binding Summary}" Classes="muted" FontSize="12" TextWrapping="Wrap" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                    <TextBlock Grid.Row="2" Classes="heading" Text="Recent sessions" Margin="0,16,0,6" />
+                    <ItemsControl Grid.Row="3" ItemsSource="{Binding RecentSessions}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:SessionRow">
+                                <TextBlock Text="{Binding Text}" FontSize="12" Classes="muted" Margin="0,0,0,4" TextWrapping="Wrap" />
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </Grid>
+
+                <!-- Code -->
+                <StackPanel Grid.Row="1" Spacing="8" IsVisible="{Binding IsCodeMode}">
+                    <TextBlock Classes="heading" Text="Language" />
+                    <ComboBox ItemsSource="{Binding Code.Languages}" SelectedItem="{Binding Code.SelectedLanguage}" HorizontalAlignment="Stretch">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate x:DataType="x:String">
+                                <TextBlock Text="{Binding Converter={x:Static vm:CodePracticeViewModel.LanguageName}}" />
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+                    <TextBlock Classes="heading" Text="Levels" Margin="0,10,0,6" />
+                    <ListBox ItemsSource="{Binding Code.Levels}" SelectedItem="{Binding Code.SelectedLevel}" Background="Transparent">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate x:DataType="vm:CodeLevelItem">
+                                <StackPanel Spacing="2" Classes.locked="{Binding IsLocked}">
+                                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                                    <TextBlock Text="{Binding Summary}" Classes="muted" FontSize="12" TextWrapping="Wrap" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </StackPanel>
+
+                <!-- Shortcuts -->
+                <StackPanel Grid.Row="1" Spacing="8" IsVisible="{Binding IsShortcutsMode}">
+                    <TextBlock Classes="heading" Text="Shortcut sets" />
+                    <ListBox ItemsSource="{Binding Shortcuts.Packs}" SelectedItem="{Binding Shortcuts.SelectedPack}" Background="Transparent">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate x:DataType="trainer:ShortcutPack">
+                                <StackPanel Spacing="2">
+                                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
+                                    <TextBlock Text="{Binding Shortcuts.Count, StringFormat='{}{0} shortcuts'}" Classes="muted" FontSize="12" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Stages -->
+        <Grid Grid.Column="1" Margin="24,20" RowDefinitions="Auto,Auto,Auto,*,Auto" IsVisible="{Binding IsStagesMode}">
+            <DockPanel Grid.Row="0" Margin="0,0,0,8">
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8" VerticalAlignment="Top">
+                    <Button Content="Stop" Command="{Binding StopCommand}" IsVisible="{Binding IsRunning}" />
+                    <Button Content="Start" Classes="accent" Command="{Binding StartCommand}" IsEnabled="{Binding CanStart}" />
+                </StackPanel>
+                <StackPanel Spacing="4" Margin="0,0,16,0">
+                    <TextBlock Text="{Binding SelectedStage.Status.Stage.Title, FallbackValue=''}" FontSize="20" FontWeight="SemiBold" />
+                    <TextBlock Text="{Binding SelectedStage.Status.Stage.Description, FallbackValue=''}" TextWrapping="Wrap" Classes="muted" />
+                    <TextBlock Text="{Binding LayoutDescription}" FontSize="12" Classes="muted" />
+                </StackPanel>
+            </DockPanel>
+
+            <Border Grid.Row="1" Classes="panel" MinHeight="140" Margin="0,8,0,0">
+                <Panel>
+                    <TextBlock IsVisible="{Binding !HasDrill}" Classes="muted" TextWrapping="Wrap" VerticalAlignment="Center"
+                               Text="Choose a stage and press Start. Type what you see; the highlighted key on the map is the next one to press." />
+                    <ItemsControl ItemsSource="{Binding Words}" IsVisible="{Binding HasDrill}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:WordCells">
+                                <ItemsControl ItemsSource="{Binding Cells}">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <StackPanel Orientation="Horizontal" />
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="vm:TargetCell">
+                                            <Border Classes="cell"
+                                                    Classes.current="{Binding IsCurrent}"
+                                                    Classes.done="{Binding IsDone}"
+                                                    Classes.missed="{Binding IsMissed}"
+                                                    Classes.command="{Binding IsCommand}">
+                                                <TextBlock Text="{Binding Text}" />
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </Panel>
+            </Border>
+
+            <StackPanel Grid.Row="2" Margin="0,10,0,0" Spacing="6">
+                <TextBlock Text="{Binding LiveStats}" FontSize="15" />
+                <TextBlock Text="{Binding Hint}" Foreground="#E5484D" TextWrapping="Wrap"
+                           IsVisible="{Binding Hint, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                <Border Classes="result" IsVisible="{Binding Result, Converter={x:Static ObjectConverters.IsNotNull}}">
+                    <TextBlock Text="{Binding Result}" TextWrapping="Wrap" />
+                </Border>
+            </StackPanel>
+
+            <controls:KeyWellMap Grid.Row="3" Margin="0,16,0,0" IsHitTestVisible="False"
+                                 Layout="{Binding Layout}"
+                                 HighlightKeyId="{Binding HighlightKeyId}"
+                                 Heat="{Binding Heat}" />
+
+            <Grid Grid.Row="4" Margin="0,12,0,0" ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto">
+                <StackPanel Grid.Column="0" Grid.RowSpan="2" Spacing="3" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding BaselineSummary}" Classes="muted" TextWrapping="Wrap" />
+                    <TextBlock Text="{Binding OldHabitSummary}" Classes="muted" TextWrapping="Wrap"
+                               IsVisible="{Binding OldHabitSummary, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                    <TextBlock Text="{Binding RelearnSummary}" Classes="muted" TextWrapping="Wrap"
+                               IsVisible="{Binding RelearnSummary, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                </StackPanel>
+                <StackPanel Grid.Column="1" Grid.Row="0" Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+                    <TextBlock Text="Old keyboard" VerticalAlignment="Center" Classes="muted" />
+                    <ComboBox ItemsSource="{Binding OldBoards}" SelectedItem="{Binding SelectedOldBoard}" MinWidth="220">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate x:DataType="keyboards:KeyboardPack">
+                                <TextBlock Text="{Binding Name}" />
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+                </StackPanel>
+                <ToggleSwitch Grid.Column="1" Grid.Row="1" HorizontalAlignment="Right" IsChecked="{Binding ShowHeat}"
+                              OnContent="Showing errors by key" OffContent="Show errors by key" />
+            </Grid>
+        </Grid>
+
+        <!-- Code -->
+        <Grid Grid.Column="1" Margin="24,20" RowDefinitions="Auto,*,Auto" IsVisible="{Binding IsCodeMode}">
+            <DockPanel Grid.Row="0" Margin="0,0,0,12">
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8" VerticalAlignment="Top">
+                    <Button Content="Stop" Command="{Binding Code.StopCommand}" IsVisible="{Binding Code.IsRunning}" />
+                    <Button Content="Start" Classes="accent" Command="{Binding Code.StartCommand}" IsEnabled="{Binding Code.CanStart}" />
+                </StackPanel>
+                <StackPanel Spacing="4">
+                    <TextBlock Text="{Binding Code.SelectedLevel.Title, FallbackValue='Code'}" FontSize="20" FontWeight="SemiBold" />
+                    <TextBlock Classes="muted" TextWrapping="Wrap"
+                               Text="Each character appears in its syntax colour once you type it. Indentation is skipped; press Enter at the end of each line." />
+                </StackPanel>
+            </DockPanel>
+
+            <Border Grid.Row="1" Classes="panel">
+                <ScrollViewer>
+                    <StackPanel>
+                        <TextBlock Text="{Binding Code.TemplateName}" Classes="muted" FontSize="12" Margin="0,0,0,10" />
+                        <ItemsControl ItemsSource="{Binding Code.Lines}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:CodeLineCells">
+                                    <StackPanel Orientation="Horizontal" Margin="0,1">
+                                        <TextBlock Classes="code" Text="{Binding Indent}" />
+                                        <ItemsControl ItemsSource="{Binding Cells}">
+                                            <ItemsControl.ItemsPanel>
+                                                <ItemsPanelTemplate>
+                                                    <StackPanel Orientation="Horizontal" />
+                                                </ItemsPanelTemplate>
+                                            </ItemsControl.ItemsPanel>
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate x:DataType="vm:CodeCell">
+                                                    <Border Classes="codecell" Classes.current="{Binding IsCurrent}" Classes.enter="{Binding IsEnter}">
+                                                        <TextBlock Classes="code" Text="{Binding Text}" Foreground="{Binding Foreground}" />
+                                                    </Border>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+
+            <StackPanel Grid.Row="2" Margin="0,10,0,0" Spacing="6">
+                <TextBlock Text="{Binding Code.LiveStats}" FontSize="15" />
+                <Border Classes="result" IsVisible="{Binding Code.Result, Converter={x:Static ObjectConverters.IsNotNull}}">
+                    <TextBlock Text="{Binding Code.Result}" TextWrapping="Wrap" />
+                </Border>
+            </StackPanel>
+        </Grid>
+
+        <!-- Shortcuts -->
+        <Grid Grid.Column="1" Margin="24,20" RowDefinitions="Auto,*" IsVisible="{Binding IsShortcutsMode}">
+            <DockPanel Grid.Row="0" Margin="0,0,0,12">
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8" VerticalAlignment="Top">
+                    <Button Content="Stop" Command="{Binding Shortcuts.StopCommand}" IsVisible="{Binding Shortcuts.IsRunning}" />
+                    <Button Content="Start" Classes="accent" Command="{Binding Shortcuts.StartCommand}" IsEnabled="{Binding Shortcuts.CanStart}" />
+                </StackPanel>
+                <StackPanel Spacing="4">
+                    <TextBlock Text="{Binding Shortcuts.SelectedPack.Name, FallbackValue='Shortcuts'}" FontSize="20" FontWeight="SemiBold" />
+                    <TextBlock Classes="muted" TextWrapping="Wrap"
+                               Text="Press the key combination for each action. After two misses the answer is shown." />
+                </StackPanel>
+            </DockPanel>
+
+            <Border Grid.Row="1" Classes="panel" VerticalAlignment="Top" MinHeight="220">
+                <StackPanel Spacing="12" VerticalAlignment="Center" HorizontalAlignment="Center">
+                    <TextBlock Text="{Binding Shortcuts.Prompt}" FontSize="32" FontWeight="SemiBold" HorizontalAlignment="Center" />
+                    <TextBlock Text="{Binding Shortcuts.Feedback}" FontSize="16" HorizontalAlignment="Center" Foreground="#E5484D" />
+                    <TextBlock Text="{Binding Shortcuts.Progress}" Classes="muted" HorizontalAlignment="Center" />
+                    <Border Classes="result" IsVisible="{Binding Shortcuts.Result, Converter={x:Static ObjectConverters.IsNotNull}}">
+                        <TextBlock Text="{Binding Shortcuts.Result}" TextWrapping="Wrap" />
+                    </Border>
+                    <TextBlock Classes="muted" TextWrapping="Wrap" HorizontalAlignment="Center"
+                               IsVisible="{Binding !Shortcuts.IsRunning}"
+                               Text="Choose a shortcut set and press Start." />
+                </StackPanel>
+            </Border>
+        </Grid>
+    </Grid>
+</UserControl>

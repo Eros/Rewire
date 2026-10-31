@@ -1,0 +1,27 @@
+{
+  "name": "Workman",
+  "description": "The Workman letter layout, which favours the keys each finger reaches most comfortably.",
+  "remaps": [
+    { "location": "w", "action": "d" },
+    { "location": "e", "action": "r" },
+    { "location": "r", "action": "w" },
+    { "location": "t", "action": "b" },
+    { "location": "y", "action": "j" },
+    { "location": "u", "action": "f" },
+    { "location": "i", "action": "u" },
+    { "location": "o", "action": "p" },
+    { "location": "p", "action": ";" },
+    { "location": "d", "action": "h" },
+    { "location": "f", "action": "t" },
+    { "location": "h", "action": "y" },
+    { "location": "j", "action": "n" },
+    { "location": "k", "action": "e" },
+    { "location": "l", "action": "o" },
+    { "location": ";", "action": "i" },
+    { "location": "c", "action": "m" },
+    { "location": "v", "action": "c" },
+    { "location": "b", "action": "v" },
+    { "location": "n", "action": "k" },
+    { "location": "m", "action": "l" }
+  ]
+}
