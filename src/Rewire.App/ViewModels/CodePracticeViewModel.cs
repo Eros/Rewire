@@ -38,14 +38,9 @@ public sealed record CodeLevelItem(int Level, string Name, StageState State)
 {
     public string Title => $"Level {Level}: {Name}";
 
-    public bool IsLocked => State == StageState.Locked;
-
-    public string Summary => State switch
-    {
-        StageState.Locked => "Opens after three templates at 95% on the level before",
-        StageState.Passed => "Passed",
-        _ => "Open",
-    };
+    public string Summary => State == StageState.Passed
+        ? "Passed: your last three templates averaged 95% or better"
+        : "Passes after three templates averaging 95%";
 }
 
 /// <summary>Code drills: real snippets that reveal their syntax colours as each character is typed correctly.</summary>
@@ -109,7 +104,7 @@ public sealed partial class CodePracticeViewModel : ViewModelBase
 
     public bool IsRunning => Session is { IsComplete: false };
 
-    public bool CanStart => SelectedLevel is { IsLocked: false } && !IsRunning && _generator is not null;
+    public bool CanStart => SelectedLevel is not null && !IsRunning && _generator is not null;
 
     /// <summary>Called whenever the layout or skill weights change, so drills use the latest of both.</summary>
     public void Use(DrillGenerator generator, string enterLegend)
@@ -123,7 +118,7 @@ public sealed partial class CodePracticeViewModel : ViewModelBase
     [RelayCommand]
     private void Start()
     {
-        if (_generator is null || SelectedLanguage is null || SelectedLevel is not { IsLocked: false } level)
+        if (_generator is null || SelectedLanguage is null || SelectedLevel is not { } level)
             return;
 
         var candidates = _templates.Where(template => template.Language == SelectedLanguage && template.Level == level.Level).ToList();
@@ -176,10 +171,8 @@ public sealed partial class CodePracticeViewModel : ViewModelBase
         var saved = _training.Save(session);
         RefreshLevels();
 
-        var next = SelectedLevel is { } current ? Levels.FirstOrDefault(level => level.Level == current.Level + 1) : null;
-        Result = next is { IsLocked: false }
-            ? $"{saved.Accuracy:0%} accuracy at {saved.WordsPerMinute:0} wpm. Level {next.Level} is open."
-            : $"{saved.Accuracy:0%} accuracy at {saved.WordsPerMinute:0} wpm. The next level opens after three templates averaging 95%.";
+        var passed = SelectedLevel is { State: StageState.Passed } current ? $" Level {current.Level} is passed." : "";
+        Result = $"{saved.Accuracy:0%} accuracy at {saved.WordsPerMinute:0} wpm.{passed}";
     }
 
     partial void OnSelectedLanguageChanged(string? value) => RefreshLevels();
@@ -195,8 +188,7 @@ public sealed partial class CodePracticeViewModel : ViewModelBase
         for (var level = 1; level <= CodeTemplates.Levels; level++)
             Levels.Add(new CodeLevelItem(level, CodeTemplates.LevelNames[level - 1], states[level - 1]));
 
-        SelectedLevel = Levels.FirstOrDefault(level => level.Level == selected && !level.IsLocked)
-            ?? Levels.LastOrDefault(level => !level.IsLocked);
+        SelectedLevel = Levels.FirstOrDefault(level => level.Level == selected) ?? Levels.FirstOrDefault();
     }
 
     private void BuildLines(CodeDrill code)

@@ -89,7 +89,7 @@
                 <ListBox Grid.Row="0" ItemsSource="{Binding Modes}" SelectedIndex="{Binding Mode}" Margin="0,0,0,14" Classes="modes">
                     <ListBox.ItemsPanel>
                         <ItemsPanelTemplate>
-                            <UniformGrid Rows="1" />
+                            <UniformGrid Columns="2" />
                         </ItemsPanelTemplate>
                     </ListBox.ItemsPanel>
                 </ListBox>
@@ -118,6 +118,29 @@
                     </ItemsControl>
                 </Grid>
 
+                <!-- Timed -->
+                <Grid Grid.Row="1" RowDefinitions="Auto,Auto,Auto,*" IsVisible="{Binding IsTimedMode}">
+                    <TextBlock Grid.Row="0" Classes="heading" Text="Test length" />
+                    <ListBox Grid.Row="1" ItemsSource="{Binding TimedOptions}" SelectedItem="{Binding SelectedTimed}" Background="Transparent">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate x:DataType="vm:TimedOption">
+                                <StackPanel Spacing="2">
+                                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
+                                    <TextBlock Text="{Binding Summary}" Classes="muted" FontSize="12" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                    <TextBlock Grid.Row="2" Classes="heading" Text="Recent sessions" Margin="0,16,0,6" />
+                    <ItemsControl Grid.Row="3" ItemsSource="{Binding RecentSessions}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:SessionRow">
+                                <TextBlock Text="{Binding Text}" FontSize="12" Classes="muted" Margin="0,0,0,4" TextWrapping="Wrap" />
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </Grid>
+
                 <!-- Code -->
                 <StackPanel Grid.Row="1" Spacing="8" IsVisible="{Binding IsCodeMode}">
                     <TextBlock Classes="heading" Text="Language" />
@@ -132,7 +155,7 @@
                     <ListBox ItemsSource="{Binding Code.Levels}" SelectedItem="{Binding Code.SelectedLevel}" Background="Transparent">
                         <ListBox.ItemTemplate>
                             <DataTemplate x:DataType="vm:CodeLevelItem">
-                                <StackPanel Spacing="2" Classes.locked="{Binding IsLocked}">
+                                <StackPanel Spacing="2">
                                     <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextWrapping="Wrap" />
                                     <TextBlock Text="{Binding Summary}" Classes="muted" FontSize="12" TextWrapping="Wrap" />
                                 </StackPanel>
@@ -158,16 +181,16 @@
             </Grid>
         </Border>
 
-        <!-- Stages -->
-        <Grid Grid.Column="1" Margin="24,20" RowDefinitions="Auto,Auto,Auto,*,Auto" IsVisible="{Binding IsStagesMode}">
+        <!-- Stages and timed tests -->
+        <Grid Grid.Column="1" Margin="24,20" RowDefinitions="Auto,Auto,Auto,*,Auto" IsVisible="{Binding IsTypingMode}">
             <DockPanel Grid.Row="0" Margin="0,0,0,8">
                 <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8" VerticalAlignment="Top">
                     <Button Content="Stop" Command="{Binding StopCommand}" IsVisible="{Binding IsRunning}" />
                     <Button Content="Start" Classes="accent" Command="{Binding StartCommand}" IsEnabled="{Binding CanStart}" />
                 </StackPanel>
                 <StackPanel Spacing="4" Margin="0,0,16,0">
-                    <TextBlock Text="{Binding SelectedStage.Status.Stage.Title, FallbackValue=''}" FontSize="20" FontWeight="SemiBold" />
-                    <TextBlock Text="{Binding SelectedStage.Status.Stage.Description, FallbackValue=''}" TextWrapping="Wrap" Classes="muted" />
+                    <TextBlock Text="{Binding DrillTitle}" FontSize="20" FontWeight="SemiBold" />
+                    <TextBlock Text="{Binding DrillDescription}" TextWrapping="Wrap" Classes="muted" />
                     <TextBlock Text="{Binding LayoutDescription}" FontSize="12" Classes="muted" />
                 </StackPanel>
             </DockPanel>
@@ -175,7 +198,7 @@
             <Border Grid.Row="1" Classes="panel" MinHeight="140" Margin="0,8,0,0">
                 <Panel>
                     <TextBlock IsVisible="{Binding !HasDrill}" Classes="muted" TextWrapping="Wrap" VerticalAlignment="Center"
-                               Text="Choose a stage and press Start. Type what you see; the highlighted key on the map is the next one to press." />
+                               Text="Press Start, then type what you see. The highlighted key on the map is the next one to press." />
                     <ItemsControl ItemsSource="{Binding Words}" IsVisible="{Binding HasDrill}">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>

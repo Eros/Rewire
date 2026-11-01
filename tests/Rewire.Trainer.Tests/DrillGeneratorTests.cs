@@ -68,6 +68,24 @@ public class DrillGeneratorTests
         Assert.Contains(drill.Targets, target => target.KeyId == "left" && !target.IsCharacter);
     }
 
+    [Theory]
+    [InlineData("baseline")]
+    [InlineData("home")]
+    [InlineData("columns")]
+    [InlineData("thumbs")]
+    public void Never_shows_the_same_word_twice_in_a_row(string stageId)
+    {
+        for (var seed = 0; seed < 50; seed++)
+        {
+            var drill = new DrillGenerator(Factory, Typable, new Random(seed)).Generate(Stage(stageId), Stage("columns").Keys);
+            var words = string.Concat(drill.Targets.Select(target => target.IsCharacter ? target.Display : " "))
+                .Split(' ', StringSplitOptions.RemoveEmptyEntries);
+
+            for (var i = 1; i < words.Length; i++)
+                Assert.False(words[i] == words[i - 1], $"Seed {seed} repeats \"{words[i]}\" at word {i}.");
+        }
+    }
+
     [Fact]
     public void Finds_the_key_that_sends_an_action()
     {
@@ -76,5 +94,25 @@ public class DrillGeneratorTests
         Assert.Equal("bspace", generator.KeyFor("space"));
         Assert.Equal("space", generator.KeyFor("bspace"));
         Assert.Equal("a", generator.KeyFor("A"));
+    }
+}
+
+public class TimedTestTests
+{
+    [Fact]
+    public void Offers_four_lengths_with_readable_names()
+    {
+        Assert.Equal(["30 seconds", "1 minute", "2 minutes", "5 minutes"], TimedTest.Durations.Select(TimedTest.Name));
+    }
+
+    [Fact]
+    public void A_timed_test_is_a_long_run_of_words_with_no_repeats()
+    {
+        var drill = new DrillGenerator(TrainerFixtures.Factory, TrainerFixtures.Typable, new Random(4)).Generate(TimedTest.Stage(60), []);
+        var words = string.Concat(drill.Targets.Select(target => target.Display)).Split(' ');
+
+        Assert.True(words.Length > 300);
+        Assert.Equal(TimeSpan.FromMinutes(1), drill.Stage.TimeLimit);
+        Assert.All(words.Zip(words.Skip(1)), pair => Assert.NotEqual(pair.First, pair.Second));
     }
 }

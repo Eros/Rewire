@@ -49,7 +49,7 @@ public sealed class DrillGenerator
 
         var targets = stage.Drill switch
         {
-            DrillKind.Baseline => Text(string.Join(' ', Enumerable.Range(0, BaselineWords).Select(_ => Words[_random.Next(Words.Count)]))),
+            DrillKind.Baseline or DrillKind.Timed => Text(string.Join(' ', RandomWords())),
             DrillKind.Columns => [.. ColumnRuns(stage), .. Space(), .. WordDrill(known, focus)],
             DrillKind.Commands => CommandDrill(known, focus),
             _ => WordDrill(known, focus),
@@ -101,10 +101,11 @@ public sealed class DrillGenerator
             "[" when symbols.Any(other => other.Display == "]") => "]",
             _ => null,
         };
-        return closing is null ? $"{word}{symbol}{Words[_random.Next(Words.Count)]}" : $"{symbol}{word}{closing}";
+        return closing is null ? $"{word}{symbol}{Different(Words, word, list => list[_random.Next(list.Count)])}" : $"{symbol}{word}{closing}";
     }
 
-    // Runs down each column of the stage's keys, one finger at a time.
+    // Runs down each column of the stage's keys, one finger at a time, through every column twice
+    // rather than each column twice in a row, so no run follows itself.
     private List<DrillTarget> ColumnRuns(Stage stage)
     {
         var pack = _layout.Pack;
@@ -115,17 +116,16 @@ public sealed class DrillGenerator
             .OrderBy(column => column.Key.Hand)
             .ThenBy(column => column.Key.Hand == Hand.Left ? column.Key.X : -column.Key.X);
 
-        var targets = new List<DrillTarget>();
-        foreach (var column in columns)
-        {
-            var run = Targets(column.OrderBy(key => key.Y).Select(key => key.Id));
-            if (run.Count == 0)
-                continue;
+        var runs = columns
+            .Select(column => Targets(column.OrderBy(key => key.Y).Select(key => key.Id)))
+            .Where(run => run.Count > 0)
+            .ToList();
 
+        var targets = new List<DrillTarget>();
+        foreach (var run in runs.Concat(runs))
+        {
             if (targets.Count > 0)
                 targets.AddRange(Space());
-            targets.AddRange(run);
-            targets.AddRange(Space());
             targets.AddRange(run);
         }
 
@@ -145,16 +145,40 @@ public sealed class DrillGenerator
             // Too few real words fit the keys learned so far, so made-up ones fill the gaps.
             if (candidates.Count < 12 && focusLetters.Count > 0 && (candidates.Count == 0 || _random.NextDouble() < 0.6))
             {
-                picked.Add(PseudoWord(focusLetters, allowed));
+                picked.Add(Different(picked.LastOrDefault(), () => PseudoWord(focusLetters, allowed)));
                 continue;
             }
 
             if (candidates.Count == 0)
                 break;
-            picked.Add(WeightedPick(candidates, word => (1 + 4.0 * word.Count(focusLetters.Contains) / word.Length) * Need(word)));
+            picked.Add(Different(candidates, picked.LastOrDefault(),
+                options => WeightedPick(options, word => (1 + 4.0 * word.Count(focusLetters.Contains) / word.Length) * Need(word))));
         }
 
         return picked;
+    }
+
+    private IEnumerable<string> RandomWords()
+    {
+        string? previous = null;
+        for (var i = 0; i < BaselineWords; i++)
+            yield return previous = Different(Words, previous, list => list[_random.Next(list.Count)]);
+    }
+
+    // Picks from the words other than the one just used, so no word comes twice in a row.
+    private static string Different(IReadOnlyList<string> words, string? previous, Func<IReadOnlyList<string>, string> pick)
+    {
+        var others = words.Where(word => word != previous).ToList();
+        return pick(others.Count > 0 ? others : words);
+    }
+
+    // Made-up words are drawn again until one differs from the last; a few tries is plenty.
+    private static string Different(string? previous, Func<string> make)
+    {
+        var word = make();
+        for (var attempt = 0; attempt < 5 && word == previous; attempt++)
+            word = make();
+        return word;
     }
 
     private string PseudoWord(IReadOnlySet<char> focusLetters, IReadOnlySet<char> allowed)

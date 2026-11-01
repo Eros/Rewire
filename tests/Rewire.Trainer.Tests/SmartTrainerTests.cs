@@ -179,6 +179,31 @@ public class CodeTemplateTests
         Assert.Equal([0, 4], code.Lines.Select(line => line.Indent));
     }
 
+    [Theory]
+    [InlineData("csharp", "using System;\nusing static System.Math;\nvar x = 1;", "var x = 1;")]
+    [InlineData("csharp", "using var stream = Open();", "using var stream = Open();")]
+    [InlineData("java", "import java.util.List;\nint x = 1;", "int x = 1;")]
+    [InlineData("python", "import sys\nfrom os import path\nx = 1", "x = 1")]
+    [InlineData("typescript", "import { a } from \"b\";\nconst x = 1;", "const x = 1;")]
+    [InlineData("cpp", "#include <iostream>\nint x = 1;", "int x = 1;")]
+    [InlineData("rust", "use std::io;\nlet x = 1;", "let x = 1;")]
+    [InlineData("go", "import (\n\t\"fmt\"\n\t\"os\"\n)\nx := 1", "x := 1")]
+    [InlineData("go", "import \"fmt\"\nx := 1", "x := 1")]
+    public void Leaves_out_imports_which_editors_add_themselves(string language, string text, string typed)
+    {
+        var code = CodeTemplates.Build(new CodeTemplate(language, 1, "test", text), new DrillGenerator(Factory, Typable).KeyFor, "Enter");
+
+        Assert.Equal(typed, string.Concat(code.Drill.Targets.Select(target => target.Display)));
+    }
+
+    [Fact]
+    public void Every_template_still_has_code_once_imports_are_left_out()
+    {
+        var keys = new DrillGenerator(Factory, Typable).KeyFor;
+
+        Assert.All(Templates, template => Assert.NotEmpty(CodeTemplates.Build(template, keys, "Enter").Drill.Targets));
+    }
+
     [Fact]
     public void Types_shifted_characters_with_their_unshifted_key()
     {
@@ -257,14 +282,20 @@ public class CodeLevelTests : IDisposable
     }
 
     [Fact]
-    public void Opens_the_next_level_after_three_accurate_templates()
+    public void Every_level_is_open_from_the_start()
+    {
+        Assert.All(_store.CodeLevels("csharp"), state => Assert.Equal(StageState.Open, state));
+    }
+
+    [Fact]
+    public void Passes_a_level_after_three_accurate_templates()
     {
         var clock = new ManualClock();
         var code = CodeTemplates.Build(new CodeTemplate("csharp", 1, "x.cs", "var x;"), new DrillGenerator(Factory, Typable).KeyFor, "Enter");
 
         for (var run = 0; run < 3; run++)
         {
-            Assert.Equal(StageState.Locked, _store.CodeLevels("csharp")[1]);
+            Assert.Equal(StageState.Open, _store.CodeLevels("csharp")[0]);
             var session = new TypingSession(code.Drill, action => action, clock);
             foreach (var target in code.Drill.Targets)
             {
@@ -276,7 +307,7 @@ public class CodeLevelTests : IDisposable
             clock.Advance(TimeSpan.FromMinutes(1));
         }
 
-        Assert.Equal([StageState.Passed, StageState.Open, StageState.Locked, StageState.Locked, StageState.Locked], _store.CodeLevels("csharp"));
+        Assert.Equal([StageState.Passed, StageState.Open, StageState.Open, StageState.Open, StageState.Open], _store.CodeLevels("csharp"));
     }
 
     public void Dispose()

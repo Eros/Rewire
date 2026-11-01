@@ -150,23 +150,16 @@ public sealed class TrainingStore : IDisposable
     }
 
     /// <summary>
-    /// Level 1 is always open; each later level opens once the three most recent templates at the level
-    /// below average 95% accuracy.
+    /// Every level is open to practise in any order; a level counts as passed once the three most recent
+    /// templates at it average 95% accuracy.
     /// </summary>
-    public IReadOnlyList<StageState> CodeLevels(string language)
-    {
-        var states = new List<StageState>();
-        var open = true;
-        for (var level = 1; level <= CodeTemplates.Levels; level++)
-        {
-            var recent = Sessions(CodeTemplates.StageId(language, level)).Take(3).ToList();
-            var passed = recent.Count == 3 && recent.Average(session => session.Accuracy) >= Curriculum.PassingAccuracy;
-            states.Add(!open ? StageState.Locked : passed ? StageState.Passed : StageState.Open);
-            open = passed;
-        }
-
-        return states;
-    }
+    public IReadOnlyList<StageState> CodeLevels(string language) =>
+        Enumerable.Range(1, CodeTemplates.Levels)
+            .Select(level => Sessions(CodeTemplates.StageId(language, level)).Take(3).ToList())
+            .Select(recent => recent.Count == 3 && recent.Average(session => session.Accuracy) >= Curriculum.PassingAccuracy
+                ? StageState.Passed
+                : StageState.Open)
+            .ToList();
 
     /// <summary>Saves a finished shortcut drill; its speed is counted in shortcuts per minute.</summary>
     public SessionSummary Save(ShortcutSession session)

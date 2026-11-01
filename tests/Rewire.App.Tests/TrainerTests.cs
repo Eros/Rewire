@@ -101,6 +101,60 @@ public class TrainerTests : IDisposable
     }
 
     [Fact]
+    public void A_timed_test_ends_at_its_time_and_reports_the_speed()
+    {
+        StartTimedTest(seconds: 60);
+        TypeTargets(30, TimeSpan.FromMilliseconds(200));
+        _clock.Advance(TimeSpan.FromMinutes(1));
+
+        _trainer.Tick();
+
+        Assert.False(_trainer.IsRunning);
+        Assert.Matches(@"^\d+ wpm at 100% accuracy over 1 minute\. That's your first 1 minute test\.$", _trainer.Result);
+        Assert.Single(_training.Sessions(TimedTest.StageId(60)));
+        Assert.StartsWith("Best ", _trainer.TimedOptions.Single(option => option.Seconds == 60).Summary);
+        Assert.Equal("Timed, 1 minute", _trainer.RecentSessions[0].Stage);
+    }
+
+    [Fact]
+    public void Compares_each_timed_test_with_the_best_so_far()
+    {
+        // Speed over a timed test is the keys typed before time runs out.
+        RunTimedTest(seconds: 30, keys: 50);
+
+        RunTimedTest(seconds: 30, keys: 30);
+        Assert.Contains("Your best over 30 seconds is 20 wpm", _trainer.Result);
+
+        RunTimedTest(seconds: 30, keys: 80);
+        Assert.Contains("A new best, up from 20 wpm", _trainer.Result);
+    }
+
+    [Fact]
+    public void A_timed_test_leaves_the_stages_alone_but_counts_towards_key_practice()
+    {
+        RunTimedTest(seconds: 30, keys: 50);
+
+        Assert.Equal(StageState.Open, _trainer.Stages[0].Status.State);
+        Assert.Null(_training.Baseline());
+        Assert.NotEmpty(_training.Scores.Weights(_clock.GetUtcNow()).Keys);
+    }
+
+    [Fact]
+    public void Shows_a_long_test_a_few_lines_at_a_time()
+    {
+        StartTimedTest(seconds: 60);
+        var first = _trainer.Words[0];
+        Assert.Equal(36, _trainer.Words.Count);
+
+        // Typing through the first twelve words moves the window on by twelve.
+        while (_trainer.Words[0] == first && _trainer.Session!.Current is { } target)
+            _trainer.KeyPressed(KeysByAction[target.Action]);
+
+        Assert.True(_trainer.Words[0].Cells[0].IsCurrent);
+        Assert.Equal(36, _trainer.Words.Count);
+    }
+
+    [Fact]
     public void Ignores_keys_when_no_drill_is_running()
     {
         Assert.False(_trainer.KeyPressed(PhysicalKey.A));
@@ -115,7 +169,23 @@ public class TrainerTests : IDisposable
             Directory.Delete(_directory, recursive: true);
     }
 
-    private void CompleteBaseline()
+    private void StartTimedTest(int seconds)
+    {
+        _trainer.Mode = 1;
+        _trainer.SelectedTimed = _trainer.TimedOptions.Single(option => option.Seconds == seconds);
+        _trainer.StartCommand.Execute(null);
+    }
+
+    private void RunTimedTest(int seconds, int keys)
+    {
+        StartTimedTest(seconds);
+        TypeTargets(keys, TimeSpan.FromMilliseconds(100));
+        _clock.Advance(TimeSpan.FromSeconds(seconds));
+        _trainer.Tick();
+        _clock.Advance(TimeSpan.FromMinutes(1));
+    }
+
+        private void CompleteBaseline()
     {
         _trainer.SelectedStage = _trainer.Stages[0];
         _trainer.StartCommand.Execute(null);

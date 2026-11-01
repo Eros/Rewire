@@ -48,7 +48,7 @@ public class SmartTrainerTests : IDisposable
     [Fact]
     public void Runs_a_code_drill_to_the_end_and_saves_it()
     {
-        _trainer.Mode = 1;
+        _trainer.Mode = 2;
         _trainer.Code.SelectedLanguage = "python";
         _trainer.Code.StartCommand.Execute(null);
 
@@ -64,7 +64,7 @@ public class SmartTrainerTests : IDisposable
     [Fact]
     public void Judges_a_shortcut_by_its_key_and_modifiers()
     {
-        _trainer.Mode = 2;
+        _trainer.Mode = 3;
         _trainer.Shortcuts.SelectedPack = _trainer.Shortcuts.Packs.Single(pack => pack.Name == "macOS editing");
         _trainer.Shortcuts.StartCommand.Execute(null);
         var first = _trainer.Shortcuts.Session!.Current!;

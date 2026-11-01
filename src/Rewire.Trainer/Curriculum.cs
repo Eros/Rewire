@@ -21,6 +21,28 @@ public enum DrillKind
 
     /// <summary>A prompt such as "Go to declaration", answered by pressing its key binding.</summary>
     Shortcuts,
+
+    /// <summary>Ordinary words for a fixed time on the new keyboard, to track speed over time.</summary>
+    Timed,
+}
+
+/// <summary>Speed tests of a fixed length, typed on the new keyboard and outside the stage progression.</summary>
+public static class TimedTest
+{
+    public static readonly IReadOnlyList<int> Durations = [30, 60, 120, 300];
+
+    public static string StageId(int seconds) => $"timed:{seconds}";
+
+    public static string Name(int seconds) => seconds < 60 ? $"{seconds} seconds" : seconds == 60 ? "1 minute" : $"{seconds / 60} minutes";
+
+    public static Stage Stage(int seconds) => new(
+        StageId(seconds),
+        $"Timed test, {Name(seconds)}",
+        "Type ordinary words until the time runs out. The clock starts at your first key.",
+        DrillKind.Timed,
+        [],
+        0,
+        TimeSpan.FromSeconds(seconds));
 }
 
 /// <param name="Keys">The physical keys this stage drills, by key id.</param>

@@ -43,9 +43,39 @@ public static class CodeTemplates
 
     public static string StageId(string language, int level) => $"code:{language}:{level}";
 
+    // Editors add imports automatically, so typing them is not worth practising.
+    private static bool IsImport(string language, string line, ref bool inImportBlock)
+    {
+        // Go groups imports in a block: import ( ... ).
+        if (inImportBlock)
+        {
+            inImportBlock = line != ")";
+            return true;
+        }
+
+        if (language == "go" && line == "import (")
+        {
+            inImportBlock = true;
+            return true;
+        }
+
+        return language switch
+        {
+            // A using directive names a namespace; using var or using ( is an ordinary statement.
+            "csharp" => line.StartsWith("using ") && line.EndsWith(';') && !line.StartsWith("using var ") && !line.StartsWith("using ("),
+            "java" => line.StartsWith("import "),
+            "python" => line.StartsWith("import ") || (line.StartsWith("from ") && line.Contains(" import ")),
+            "javascript" or "typescript" => line.StartsWith("import ") || (line.StartsWith("const ") && line.Contains("require(")),
+            "cpp" => line.StartsWith("#include"),
+            "rust" => line.StartsWith("use "),
+            "go" => line.StartsWith("import "),
+            _ => false,
+        };
+    }
+
     /// <summary>
-    /// Turns a template into targets: blank lines and leading indentation are skipped, trailing spaces dropped,
-    /// and Enter ends every line but the last. Characters no key in the layout can type are left out.
+    /// Turns a template into targets: blank lines, imports and leading indentation are skipped, trailing spaces
+    /// dropped, and Enter ends every line but the last. Characters no key in the layout can type are left out.
     /// </summary>
     public static CodeDrill Build(CodeTemplate template, Func<string, string?> keyForAction, string enterLegend)
     {
@@ -58,11 +88,13 @@ public static class CodeTemplates
         var enterKey = keyForAction("enter");
 
         var lineStart = 0;
+        var inImportBlock = false;
         foreach (var line in template.Text.Split('\n'))
         {
             var content = line.TrimEnd();
             var indent = content.Length - content.TrimStart().Length;
-            if (content.Trim().Length > 0)
+            var isImport = IsImport(template.Language, content.Trim(), ref inImportBlock);
+            if (content.Trim().Length > 0 && !isImport)
             {
                 if (lines.Count > 0 && enterKey is not null)
                 {

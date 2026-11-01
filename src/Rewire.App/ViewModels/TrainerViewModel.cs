@@ -56,6 +56,13 @@ public sealed record TrainerContent(
     public static TrainerContent None { get; } = new([], [], []);
 }
 
+public sealed record TimedOption(int Seconds, SessionSummary? Best)
+{
+    public string Name => TimedTest.Name(Seconds);
+
+    public string Summary => Best is { } best ? $"Best {best.WordsPerMinute:0} wpm at {best.Accuracy:0%}" : "Not taken yet";
+}
+
 public sealed record SessionRow(string Stage, SessionSummary Session)
 {
     public string Text => $"{Stage} · {Session.WordsPerMinute:0} wpm · {Session.Accuracy:0%} · {Session.EndedAt.ToLocalTime():d MMM, HH:mm}";
@@ -70,8 +77,9 @@ public sealed partial class TrainerViewModel : ViewModelBase
     private const string LayoutFileName = "qwerty.txt";
     private const string OldKeyboardSetting = "old_keyboard";
     private const int StagesMode = 0;
-    private const int CodeMode = 1;
-    private const int ShortcutsMode = 2;
+    private const int TimedMode = 1;
+    private const int CodeMode = 2;
+    private const int ShortcutsMode = 3;
     private static readonly TimeSpan HeatWindow = TimeSpan.FromDays(30);
 
     private readonly IReadOnlyList<Stage> _stages;
@@ -80,7 +88,14 @@ public sealed partial class TrainerViewModel : ViewModelBase
     private readonly TimeProvider _time;
     private DrillGenerator _generator;
     private OldHabitDetector? _oldHabits;
+    // Long drills show a window of words that moves on a block at a time, keeping the stats and map in view.
+    private const int VisibleWords = 36;
+    private const int WordStep = 12;
+
     private List<TargetCell> _cells = [];
+    private List<WordCells> _allWords = [];
+    private int[] _wordOfCell = [];
+    private int _windowStart = -1;
 
     public TrainerViewModel(
         KeyboardPack pack,
@@ -118,13 +133,33 @@ public sealed partial class TrainerViewModel : ViewModelBase
 
     public IReadOnlyList<KeyboardPack> OldBoards { get; }
 
-    public IReadOnlyList<string> Modes { get; } = ["Stages", "Code", "Shortcuts"];
+    public IReadOnlyList<string> Modes { get; } = ["Stages", "Timed", "Code", "Shortcuts"];
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsStagesMode), nameof(IsCodeMode), nameof(IsShortcutsMode))]
+    [NotifyPropertyChangedFor(nameof(IsStagesMode), nameof(IsTimedMode), nameof(IsTypingMode), nameof(IsCodeMode),
+        nameof(IsShortcutsMode), nameof(CanStart), nameof(DrillTitle), nameof(DrillDescription))]
     public partial int Mode { get; set; }
 
     public bool IsStagesMode => Mode == StagesMode;
+
+    public bool IsTimedMode => Mode == TimedMode;
+
+    /// <summary>Stages and timed tests share the same typing screen.</summary>
+    public bool IsTypingMode => Mode is StagesMode or TimedMode;
+
+    public ObservableCollection<TimedOption> TimedOptions { get; } = [];
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanStart), nameof(DrillTitle), nameof(DrillDescription))]
+    public partial TimedOption? SelectedTimed { get; set; }
+
+    public string DrillTitle => IsTimedMode
+        ? SelectedTimed is { } timed ? TimedTest.Stage(timed.Seconds).Title : "Timed test"
+        : SelectedStage?.Status.Stage.Title ?? "";
+
+    public string DrillDescription => IsTimedMode
+        ? TimedTest.Stage(SelectedTimed?.Seconds ?? 60).Description
+        : SelectedStage?.Status.Stage.Description ?? "";
 
     public bool IsCodeMode => Mode == CodeMode;
 
@@ -161,7 +196,7 @@ public sealed partial class TrainerViewModel : ViewModelBase
     public partial string LayoutDescription { get; private set; } = "";
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(CanStart))]
+    [NotifyPropertyChangedFor(nameof(CanStart), nameof(DrillTitle), nameof(DrillDescription))]
     public partial StageItem? SelectedStage { get; set; }
 
     [ObservableProperty]
@@ -194,7 +229,7 @@ public sealed partial class TrainerViewModel : ViewModelBase
 
     public bool HasDrill => Words.Count > 0;
 
-    public bool CanStart => SelectedStage is { IsLocked: false } && !IsRunning;
+    public bool CanStart => !IsRunning && (IsTimedMode ? SelectedTimed is not null : SelectedStage is { IsLocked: false });
 
     /// <summary>Reloads the layout and progress, so a change just applied in the configurator is drilled at once.</summary>
     public void Refresh()
@@ -223,10 +258,14 @@ public sealed partial class TrainerViewModel : ViewModelBase
     [RelayCommand]
     private void Start()
     {
-        if (SelectedStage is not { IsLocked: false } item)
+        Stage stage;
+        if (IsTimedMode && SelectedTimed is { } timed)
+            stage = TimedTest.Stage(timed.Seconds);
+        else if (!IsTimedMode && SelectedStage is { IsLocked: false } item)
+            stage = item.Status.Stage;
+        else
             return;
 
-        var stage = item.Status.Stage;
         var earlier = _stages.TakeWhile(other => other != stage)
             .Where(other => other.Drill != DrillKind.Baseline)
             .SelectMany(other => other.Keys);
@@ -305,6 +344,12 @@ public sealed partial class TrainerViewModel : ViewModelBase
         OnPropertyChanged(nameof(IsRunning));
         OnPropertyChanged(nameof(CanStart));
 
+        if (session.Drill.Stage.Drill == DrillKind.Timed)
+        {
+            FinishTimed(session);
+            return;
+        }
+
         var before = _training.Progress(_stages);
         var saved = _training.Save(session);
         var after = _training.Progress(_stages);
@@ -327,6 +372,23 @@ public sealed partial class TrainerViewModel : ViewModelBase
             (_, true, null) => $"Passed: {speed}",
             _ when after[index].State == StageState.Passed => $"{speed} This stage is already passed; keep practising or move on.",
             _ => $"{speed} Not passed yet: {Requirement(after[index])}",
+        };
+    }
+
+    private void FinishTimed(TypingSession session)
+    {
+        var stageId = session.Drill.Stage.Id;
+        var previousBest = _training.Sessions(stageId).MaxBy(previous => previous.WordsPerMinute);
+        var saved = _training.Save(session);
+        RefreshProgress();
+
+        var length = TimedTest.Name((int)session.Drill.Stage.TimeLimit!.Value.TotalSeconds);
+        var result = $"{saved.WordsPerMinute:0} wpm at {saved.Accuracy:0%} accuracy over {length}.";
+        Result = previousBest switch
+        {
+            null => $"{result} That's your first {length} test.",
+            _ when saved.WordsPerMinute > previousBest.WordsPerMinute => $"{result} A new best, up from {previousBest.WordsPerMinute:0} wpm.",
+            _ => $"{result} Your best over {length} is {previousBest.WordsPerMinute:0} wpm.",
         };
     }
 
@@ -363,7 +425,15 @@ public sealed partial class TrainerViewModel : ViewModelBase
         SelectedStage = Stages.FirstOrDefault(stage => stage.Status.Stage.Id == selectedId)
             ?? Stages.LastOrDefault(stage => !stage.IsLocked);
 
+        var selectedSeconds = SelectedTimed?.Seconds ?? 60;
+        TimedOptions.Clear();
+        foreach (var seconds in TimedTest.Durations)
+            TimedOptions.Add(new TimedOption(seconds, _training.Sessions(TimedTest.StageId(seconds)).MaxBy(session => session.WordsPerMinute)));
+        SelectedTimed = TimedOptions.FirstOrDefault(option => option.Seconds == selectedSeconds);
+
         var titles = _stages.ToDictionary(stage => stage.Id, stage => stage.Title);
+        foreach (var seconds in TimedTest.Durations)
+            titles[TimedTest.StageId(seconds)] = $"Timed, {TimedTest.Name(seconds)}";
         RecentSessions.Clear();
         foreach (var session in _training.Sessions().Take(8))
             RecentSessions.Add(new SessionRow(titles.GetValueOrDefault(session.StageId, session.StageId), session));
@@ -398,22 +468,40 @@ public sealed partial class TrainerViewModel : ViewModelBase
     private void BuildCells(Drill drill)
     {
         _cells = drill.Targets.Select(target => new TargetCell(target)).ToList();
-        Words.Clear();
+        _allWords = [];
+        _wordOfCell = new int[_cells.Count];
 
         var word = new List<TargetCell>();
-        foreach (var cell in _cells)
+        for (var i = 0; i < _cells.Count; i++)
         {
-            word.Add(cell);
-            if (cell.Text == " ")
+            word.Add(_cells[i]);
+            _wordOfCell[i] = _allWords.Count;
+            if (_cells[i].Text == " ")
             {
-                Words.Add(new WordCells(word));
+                _allWords.Add(new WordCells(word));
                 word = [];
             }
         }
 
         if (word.Count > 0)
-            Words.Add(new WordCells(word));
+            _allWords.Add(new WordCells(word));
+
+        _windowStart = -1;
+        ShowWindow(0);
         OnPropertyChanged(nameof(HasDrill));
+    }
+
+    private void ShowWindow(int position)
+    {
+        var currentWord = _wordOfCell.Length == 0 ? 0 : _wordOfCell[Math.Min(position, _wordOfCell.Length - 1)];
+        var start = currentWord / WordStep * WordStep;
+        if (start == _windowStart)
+            return;
+
+        _windowStart = start;
+        Words.Clear();
+        foreach (var visible in _allWords.Skip(start).Take(VisibleWords))
+            Words.Add(visible);
     }
 
     private void UpdateCursor()
@@ -426,6 +514,8 @@ public sealed partial class TrainerViewModel : ViewModelBase
             _cells[i].IsDone = i < session.Position;
             _cells[i].IsCurrent = i == session.Position && !session.IsComplete;
         }
+
+        ShowWindow(session.Position);
 
         // The baseline is typed on another keyboard, so pointing at Advantage2 keys would only confuse.
         HighlightKeyId = session.Drill.Stage.Drill == DrillKind.Baseline ? null : session.Current?.KeyId;
