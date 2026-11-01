@@ -115,7 +115,7 @@ public sealed partial class TrainerViewModel : ViewModelBase
         Layout = EffectiveLayout.Build(pack, LayoutFile.Empty);
         _generator = new DrillGenerator(Layout, KeyCapture.Actions);
         Code = new CodePracticeViewModel(content.Templates, training, _time);
-        Shortcuts = new ShortcutPracticeViewModel(pack, content.ShortcutPacks, training, _time, OperatingSystem.IsMacOS());
+        Shortcuts = new ShortcutPracticeViewModel(pack, content.ShortcutPacks, training, _time);
 
         OldBoards = content.OldBoards;
         var savedBoard = training.Setting(OldKeyboardSetting);

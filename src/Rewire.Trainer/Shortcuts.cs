@@ -7,6 +7,9 @@ public sealed record Shortcut(string Action, string Chord);
 /// <summary>A set of key bindings to learn, such as an IDE's keymap, from <c>shortcuts/&lt;id&gt;.json</c>.</summary>
 public sealed record ShortcutPack(string Id, string Name, string Platform, IReadOnlyList<Shortcut> Shortcuts)
 {
+    /// <summary>A macOS pack writes the Command key as cmd and Option as alt; other packs write Meta as win.</summary>
+    public bool IsMac => Platform.Equals("macos", StringComparison.OrdinalIgnoreCase);
+
     public static IReadOnlyList<ShortcutPack> Load(string directory, string platform)
     {
         if (!Directory.Exists(directory))
@@ -43,12 +46,12 @@ public static class Chords
         return string.Join('+', modifiers.Concat(keys));
     }
 
-    public static string Describe(string chord, Func<string, string> legend) =>
+    public static string Describe(string chord, bool mac, Func<string, string> legend) =>
         string.Join(" + ", chord.Split('+').Select(part => part switch
         {
             "cmd" => "Cmd",
             "ctrl" => "Ctrl",
-            "alt" => OperatingSystem.IsMacOS() ? "Option" : "Alt",
+            "alt" => mac ? "Option" : "Alt",
             "shift" => "Shift",
             "win" => "Win",
             _ => legend(part),
@@ -67,6 +70,8 @@ public enum ShortcutResult
 /// </summary>
 public sealed class ShortcutSession(ShortcutPack pack, IReadOnlyList<Shortcut> prompts, TimeProvider? time = null)
 {
+    public ShortcutPack Pack { get; } = pack;
+
     private const int MissesBeforeReveal = 2;
 
     private readonly TimeProvider _time = time ?? TimeProvider.System;

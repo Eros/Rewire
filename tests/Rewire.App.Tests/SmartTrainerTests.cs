@@ -79,6 +79,20 @@ public class SmartTrainerTests : IDisposable
         Assert.Equal("", _trainer.Shortcuts.Feedback);
     }
 
+    [Theory]
+    [InlineData("macos", "cmd+e")]
+    [InlineData("windows", "win+e")]
+    public void Reads_the_meta_key_as_the_pack_names_it_whatever_system_runs_the_drill(string platform, string chord)
+    {
+        var pack = new ShortcutPack("test", "Test", platform, [new Shortcut("Open", chord)]);
+        var practice = new ShortcutPracticeViewModel(Advantage2, [pack], _training, TimeProvider.System);
+        practice.StartCommand.Execute(null);
+
+        practice.KeyPressed(PhysicalKey.E, KeyModifiers.Meta);
+
+        Assert.True(practice.Session!.IsComplete);
+    }
+
     [Fact]
     public void Explains_a_mistake_that_looks_like_an_old_habit()
     {

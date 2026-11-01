@@ -14,7 +14,6 @@ public sealed partial class ShortcutPracticeViewModel(
     IReadOnlyList<ShortcutPack> packs,
     TrainingStore training,
     TimeProvider time,
-    bool isMac,
     Random? random = null) : ViewModelBase
 {
     private static readonly HashSet<string> ModifierActions = new(
@@ -77,7 +76,7 @@ public sealed partial class ShortcutPracticeViewModel(
         if (KeyCapture.ActionFor(key) is not { } action || ModifierActions.Contains(action))
             return true;
 
-        var chord = Chord(action, modifiers);
+        var chord = Chord(action, modifiers, session.Pack.IsMac);
         if (session.Press(chord) == ShortcutResult.Correct)
         {
             Feedback = "";
@@ -113,7 +112,8 @@ public sealed partial class ShortcutPracticeViewModel(
         Progress = $"{session.Position + 1} of {session.Prompts.Count} · {session.Accuracy:0%} right first time";
     }
 
-    private string Chord(string action, KeyModifiers modifiers)
+    // Meta is named as the pack names it, so a pack's chords match whichever system the drill runs on.
+    private static string Chord(string action, KeyModifiers modifiers, bool mac)
     {
         var parts = new List<string>();
         if (modifiers.HasFlag(KeyModifiers.Control))
@@ -123,10 +123,10 @@ public sealed partial class ShortcutPracticeViewModel(
         if (modifiers.HasFlag(KeyModifiers.Shift))
             parts.Add("shift");
         if (modifiers.HasFlag(KeyModifiers.Meta))
-            parts.Add(isMac ? "cmd" : "win");
+            parts.Add(mac ? "cmd" : "win");
         parts.Add(action);
         return Chords.Normalise(string.Join('+', parts));
     }
 
-    private string Describe(string chord) => Chords.Describe(chord, pack.LegendFor);
+    private string Describe(string chord) => Chords.Describe(chord, Session?.Pack.IsMac ?? false, pack.LegendFor);
 }
