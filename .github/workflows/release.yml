@@ -1,9 +1,12 @@
 name: Release
 
-# Runs when a version tag such as v0.1.0 is pushed, and drafts a GitHub release with the signed builds.
+# Builds the packages. A version tag such as v0.1.0 also drafts a GitHub release with them; running the
+# workflow by hand from the Actions tab only uploads them as artifacts. Without signing secrets the builds
+# are unsigned: macOS asks users to approve the app in System Settings, and Windows SmartScreen warns.
 on:
   push:
     tags: ['v*']
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -14,6 +17,8 @@ jobs:
     strategy:
       matrix:
         arch: [arm64, x64]
+    env:
+      CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
@@ -23,8 +28,8 @@ jobs:
       # Secrets: MACOS_CERTIFICATE (base64 .p12 of the Developer ID Application certificate),
       # MACOS_CERTIFICATE_PASSWORD, MACOS_SIGN_IDENTITY, APPLE_ID, APPLE_TEAM_ID, APPLE_APP_PASSWORD.
       - name: Set up signing
+        if: env.CERTIFICATE != ''
         env:
-          CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE }}
           CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
@@ -45,7 +50,7 @@ jobs:
       - name: Package
         env:
           REWIRE_SIGN_IDENTITY: ${{ secrets.MACOS_SIGN_IDENTITY }}
-          REWIRE_NOTARY_PROFILE: rewire
+          REWIRE_NOTARY_PROFILE: ${{ env.CERTIFICATE != '' && 'rewire' || '' }}
         run: packaging/macos/package.sh ${{ matrix.arch }}
 
       - uses: actions/upload-artifact@v4
@@ -81,6 +86,7 @@ jobs:
           path: artifacts/windows/releases/*
 
   release:
+    if: startsWith(github.ref, 'refs/tags/')
     needs: [macos, windows]
     runs-on: ubuntu-latest
     steps:
